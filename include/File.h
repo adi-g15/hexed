@@ -1,12 +1,15 @@
 #pragma once
 
+#include <string_view>
+#include <string>
+
 class File
 {
     public:
         File();
 		~File();
 
-        bool Open(const char* path);
+        bool Open(std::string_view path);
         void Close();
         unsigned int GetSize() const;
         void Seek(unsigned int position);
@@ -14,12 +17,12 @@ class File
 		void Write(void* buffer, unsigned int size);
         bool IsOpen() const;
 		bool IsReadOnly() const;
-		const char* GetFullPath() const;
-		const char* GetFileName() const;
+		const std::string& GetFullPath() const;
+		const std::string& GetFileName() const;
 
     private:
-        char* m_filename;
-		char* m_fullPath;
+        std::string m_filename;
+		std::string m_fullPath;
         unsigned int m_filesize;
         void* m_handle;
 		bool m_readOnly;
@@ -35,12 +38,12 @@ inline bool File::IsReadOnly() const
 	return m_readOnly;
 }
 
-inline const char* File::GetFullPath() const
+inline const std::string& File::GetFullPath() const
 {
 	return m_fullPath;
 }
 
-inline const char* File::GetFileName() const
+inline const std::string& File::GetFileName() const
 {
 	return m_filename;
 }

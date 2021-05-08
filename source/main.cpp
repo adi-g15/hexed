@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     Window::SetConsoleBuffer(&buffer);
     File file;
     file.Open(fname);
-    MainWindow mainWindow(&file);
+    MainWindow mainWindow(file);
 
     s_running = true;
 

@@ -2,11 +2,12 @@
 #include "Path.h"
 #include "Colours.h"
 #include <assert.h>
+#include <string>
 
-MainWindow::MainWindow(File* file) :
-m_hexView(file)
+MainWindow::MainWindow(File& file) :
+m_hexView(file),
+m_file(file)
 {
-	m_file = file;
     m_helpWindow.SetVisible(false);
 }
 
@@ -14,34 +15,35 @@ void MainWindow::OnWindowRefreshed()
 {
 	// If full path is too long, just show the filename.
 	unsigned int maxFilename = m_width - 1 - 8 - 3 - 8 - 1 - 4 - 1 - 1; // Header looks like: " <filename> [RO] xxxxxxxx / yyyyyyyy "
-	const char* fullPath = m_file->GetFullPath();
-	if (strlen(fullPath) > maxFilename)
+	const auto &fullPath = m_file.GetFullPath();
+	if (fullPath.length() > maxFilename)
 	{
 		// If filename is too long, truncate it.
-		const char* fileName = m_file->GetFileName();
-		size_t len = strlen(fileName);
-		if (len <= maxFilename)
+		const auto& fileName = m_file.GetFileName();
+		if (fileName.length() <= maxFilename)
 		{
-			strncpy_s(m_filename, MAX_PATH, fileName, len);
+			m_filename.append(fileName);
 		}
 		else
 		{
-			len = maxFilename - 2;
-			strncpy_s(m_filename, MAX_PATH, fileName, len);
-			strcat_s(m_filename, MAX_PATH, "..");
+			const auto len = maxFilename - 2;
+			m_filename.append(fileName, 0, min(len, MAX_PATH));
+			m_filename.append("..");
 		}
 	}
 	else
 	{
-		strncpy_s(m_filename, MAX_PATH, fullPath, _TRUNCATE);
+		m_filename.append(fullPath);
+		m_filename.resize(min(MAX_PATH, m_filename.length()));	// TRUNCATE string to only contain as much as it can hold
+		//strncpy_s(m_filename, MAX_PATH, fullPath, _TRUNCATE);
 	}
 
     s_consoleBuffer->Clear(Colours::Background);
     s_consoleBuffer->FillLine(0, ' ', Colours::StatusBar);
-    s_consoleBuffer->Write(1, 0, Colours::StatusBar, m_filename);
-	if (m_file->IsReadOnly())
+    s_consoleBuffer->Write(1, 0, Colours::StatusBar, m_filename.data());
+	if (m_file.IsReadOnly())
 	{
-		size_t readOnlyOffset = strlen(m_filename) + 2;
+		size_t readOnlyOffset = m_filename.length() + 2;
 		s_consoleBuffer->Write((int)readOnlyOffset, 0, Colours::StatusBar, "[RO]");
 	}
 

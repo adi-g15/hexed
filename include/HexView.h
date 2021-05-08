@@ -6,7 +6,7 @@
 class HexView : public Window
 {
     public:
-        HexView(File* file);
+        HexView(File& file);
         ~HexView();
 
         virtual void OnWindowRefreshed();
@@ -32,13 +32,13 @@ class HexView : public Window
         int m_selected;
         int m_fileSize;
 
-		File* m_file;
+		File& m_file;
 
-		enum EditMode
+		enum class EditMode
 		{
-			EditMode_None,
-			EditMode_Byte,
-			EditMode_Char
+			None,
+			Byte,
+			Char
 		};
 
 		EditMode m_editMode;

@@ -5,16 +5,18 @@
 #include "HelpWindow.h"
 #include "File.h"
 
+#include <string>
+
 class MainWindow : public Window
 {
     public:
-        MainWindow(File* file);
+        MainWindow(File& file);
         virtual void OnWindowRefreshed();
         virtual void OnKeyEvent(KeyEvent& keyEvent);
 
     private:
-        char m_filename[MAX_PATH];
+        std::string m_filename;//   Max Length = [MAX_PATH]
         HexView m_hexView;
         HelpWindow m_helpWindow;
-		File* m_file;
+		File& m_file;
 };

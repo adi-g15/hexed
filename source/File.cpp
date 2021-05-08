@@ -2,27 +2,22 @@
 #include "Error.h"
 #include <Windows.h>
 
-File::File()
-{
-    m_filename = 0;
-	m_fullPath = 0;
-    m_filesize = 0;
-    m_handle = 0;
-}
+File::File():
+    m_filesize(0),
+    m_handle(0)
+{}
 
-File::~File()
-{
-	delete[] m_fullPath;
-}
+File::~File() {}
 
-bool File::Open(const char* path)
+bool File::Open(std::string_view path)
 {
 	m_readOnly = false;
 
-	m_fullPath = new char[MAX_PATH];
-	GetFullPathName(path, MAX_PATH, m_fullPath, &m_filename);
+	m_fullPath.reserve(MAX_PATH);
+	auto m_filename_cstr = m_filename.data();
+	GetFullPathName(path.data(), MAX_PATH, m_fullPath.data(), &m_filename_cstr);
 
-	DWORD fileAttr = GetFileAttributes(path);
+	DWORD fileAttr = GetFileAttributes(path.data());
 	if (fileAttr != INVALID_FILE_ATTRIBUTES)
 		m_readOnly = (fileAttr & FILE_ATTRIBUTE_READONLY) != 0;
 
@@ -34,7 +29,7 @@ bool File::Open(const char* path)
 		shareMode |= FILE_SHARE_DELETE | FILE_SHARE_WRITE;
 	}
 
-    m_handle = CreateFile(path, access, shareMode, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    m_handle = CreateFile(path.data(), access, shareMode, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (m_handle != INVALID_HANDLE_VALUE)
         m_filesize = GetFileSize(m_handle, 0);
 

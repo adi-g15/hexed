@@ -6,27 +6,26 @@
 static const int BYTES_OFFSET = 11;
 static const int CHARS_OFFSET = BYTES_OFFSET + (16 * 3);
 
-HexView::HexView(File* file)
+HexView::HexView(File& file):
+    m_editMode(EditMode::None),
+    m_buffer(0),
+    m_topLine(0),
+    m_selected(0),
+    m_fileSize(0),
+	m_file(file)
 {
-	m_editMode = EditMode_None;
-    m_buffer = 0;
-    m_topLine = 0;
-    m_selected = 0;
-    m_fileSize = 0;
-	m_file = file;
-	assert(file);
-    if (m_file->IsOpen())
-        m_fileSize = m_file->GetSize();
+    if (m_file.IsOpen())
+        m_fileSize = m_file.GetSize();
 }
 
 HexView::~HexView()
 {
-    m_file->Close();
+    m_file.Close();
 }
 
 void HexView::OnWindowRefreshed()
 {
-    if (!m_file->IsOpen())
+    if (!m_file.IsOpen())
         return;
 
     assert(m_buffer);
@@ -67,7 +66,7 @@ void HexView::OnWindowRefreshed()
             assert(bufferIndex >= 0 && bufferIndex < m_fileSize);
             unsigned char c = m_buffer[bufferIndex];
 
-            if (offset == m_selected && (m_editMode == EditMode_None || m_editMode == EditMode_Char))
+            if (offset == m_selected && (m_editMode == EditMode::None || m_editMode == EditMode::Char))
             {
                 // Highlight the selected byte but only if not in edit mode,
 				// or if we are in edit mode, then only if we are not editing
@@ -86,7 +85,7 @@ void HexView::OnWindowRefreshed()
             if (c < ' ')
                 c = '.';
 
-            if (offset == m_selected && (m_editMode == EditMode_None || m_editMode == EditMode_Byte))
+            if (offset == m_selected && (m_editMode == EditMode::None || m_editMode == EditMode::Byte))
             {
                 // Highlight the selected character but only if not in edit mode,
 				// or if we are in edit mode, then only if we are not editing the
@@ -118,7 +117,7 @@ void HexView::OnWindowResized(int width, int height)
 
 void HexView::CacheFile(bool resizeBuffer)
 {
-    if (!m_file->IsOpen())
+    if (!m_file.IsOpen())
         return;
 
     assert(m_topLine >= 0);
@@ -136,8 +135,8 @@ void HexView::CacheFile(bool resizeBuffer)
         memset(m_buffer, 0, m_bufferSize);
     }
 
-    m_file->Seek(offset);
-    m_file->Read(m_buffer, m_bufferSize);
+    m_file.Seek(offset);
+    m_file.Read(m_buffer, m_bufferSize);
 }
 
 void HexView::OnKeyEvent(KeyEvent& keyEvent)
@@ -148,12 +147,12 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
 		{
 			case VK_ESCAPE:
 			{
-				if (m_editMode == EditMode_None)
+				if (m_editMode == EditMode::None)
 					break;
 
 				// Escape when in edit mode cancels the edit mode.
 				keyEvent.SetHandled();
-				m_editMode = EditMode_None;
+				m_editMode = EditMode::None;
 				s_consoleBuffer->SetCursor(false, 1);
 				Window::Refresh(true);
 				break;
@@ -168,7 +167,7 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
 
 	unsigned short vkCode = keyEvent.GetVKKeyCode();
 
-	if (m_editMode == EditMode_Byte)
+	if (m_editMode == EditMode::Byte)
 	{
 		unsigned char ascii = toupper(keyEvent.GetAscii());
 		if ((ascii >= 'A' && ascii <= 'F') || (ascii >= '0' && ascii <= '9'))
@@ -177,7 +176,7 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
 			vkCode = VK_RIGHT;
 		}
 	}
-	else if (m_editMode == EditMode_Char)
+	else if (m_editMode == EditMode::Char)
 	{
 		unsigned char ascii = keyEvent.GetAscii();
 		if (ascii >= 32 && ascii < 127)
@@ -192,7 +191,7 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
         case VK_LEFT:
         case 'H':
         {
-			if (m_editMode == EditMode_Byte && m_nibbleIndex == 0)
+			if (m_editMode == EditMode::Byte && m_nibbleIndex == 0)
 			{
 				// In byte edit mode
 				m_nibbleIndex = 1;
@@ -216,7 +215,7 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
         case VK_RIGHT:
         case 'L':
         {
-			if (m_editMode == EditMode_Byte && m_nibbleIndex == 1)
+			if (m_editMode == EditMode::Byte && m_nibbleIndex == 1)
 			{
 				m_nibbleIndex = 0;
 			}
@@ -397,10 +396,10 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
 
 		case VK_INSERT:
 		{
-			if (m_editMode != EditMode_None || !m_file->IsOpen())
+			if (m_editMode != EditMode::None || !m_file.IsOpen())
 				break;
 
-			m_editMode = EditMode_Byte;
+			m_editMode = EditMode::Byte;
 			m_nibbleIndex = 1;
 			s_consoleBuffer->SetCursor(true, 100);
 			break;
@@ -408,10 +407,10 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
 
 		case VK_TAB:
 		{
-			if (m_editMode == EditMode_None)
+			if (m_editMode == EditMode::None)
 				break;
 
-			m_editMode = m_editMode == EditMode_Byte ? EditMode_Char : EditMode_Byte;
+			m_editMode = m_editMode == EditMode::Byte ? EditMode::Char : EditMode::Byte;
 			break;
 		}
     }
@@ -425,13 +424,13 @@ void HexView::OnKeyEvent(KeyEvent& keyEvent)
 
 void HexView::UpdateCursor()
 {
-	if (m_editMode == EditMode_None)
+	if (m_editMode == EditMode::None)
 		return;
 
 	HANDLE stdoutHandle = s_consoleBuffer->GetStdoutHandle();
 	COORD cursorPos;
 
-	if (m_editMode == EditMode_Byte)
+	if (m_editMode == EditMode::Byte)
 	{
 		cursorPos.X = BYTES_OFFSET + ((m_selected & 0xf) * 3) + (m_nibbleIndex ^ 1);
 	}
@@ -456,8 +455,8 @@ void HexView::WriteBytes(unsigned char ascii)
 	b = (b & ~mask) | (value << (4 * m_nibbleIndex));
 	m_buffer[bufferIndex] = b;
 
-	m_file->Seek(m_selected);
-	m_file->Write(m_buffer + bufferIndex, 1);
+	m_file.Seek(m_selected);
+	m_file.Write(m_buffer + bufferIndex, 1);
 }
 
 void HexView::WriteChar(unsigned char ascii)
@@ -466,6 +465,6 @@ void HexView::WriteChar(unsigned char ascii)
 	int bufferIndex = m_selected - (m_topLine << 4);
 	assert(bufferIndex >= 0 && bufferIndex < m_bufferSize);
 	m_buffer[bufferIndex] = ascii;
-	m_file->Seek(m_selected);
-	m_file->Write(m_buffer + bufferIndex, 1);
+	m_file.Seek(m_selected);
+	m_file.Write(m_buffer + bufferIndex, 1);
 }
