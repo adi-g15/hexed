@@ -1,6 +1,8 @@
-hexed - a Windows console-based hex editor
+# hexed
 
-[![Build status](https://ci.appveyor.com/api/projects/status/1mjm8674l9ardj0t?svg=true)](https://ci.appveyor.com/project/izzo/hexed)
+A Windows console-based hex editor
+
+[![MSBuild](https://github.com/adi-g15/hexed/actions/workflows/msbuild.yaml/badge.svg)](https://github.com/adi-g15/hexed/actions/workflows/msbuild.yaml)
 
 ## Keyboard shortcuts
 
